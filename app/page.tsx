@@ -214,24 +214,6 @@ export default function Home() {
         `${CLOUDINARY_BASE_URL}/image/upload/q_auto,f_auto/SCENES-_Prompts_to_Reflect_iksoxs`,
       ],
     },
-    {
-      id: "007",
-      code: "PRJ_007",
-      title: "DETROIT",
-      category: "DOCUMENTARY",
-      year: "2024",
-      image: "https://images.unsplash.com/photo-1535223289827-42f1e9919769",
-      video: `${CLOUDINARY_BASE_URL}/video/upload/q_auto,f_auto/real_friends.mp4`,
-      description:
-        "An audio-visual documentary exploring Detroit's electronic music heritage and its influence on digital culture.",
-      tech: ["FIELD_RECORDING", "ANALOG_SYNTH", "16MM_FILM"],
-      link: "https://soundoffractures.com/detroit",
-      bgColor: "bg-orange-900",
-      additionalImages: [
-        "https://images.unsplash.com/photo-1549317336-206569e8475c",
-        "https://images.unsplash.com/photo-1559827260-dc66d52bef19",
-      ],
-    },
   ]
 
   useEffect(() => {
