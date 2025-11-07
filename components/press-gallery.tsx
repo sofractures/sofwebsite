@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect } from "react"
 import { motion, useScroll, useTransform } from "framer-motion"
-import Image from "next/image"
 
 const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/dibufe126/image/upload"
 
@@ -41,21 +40,28 @@ const Column = ({ images, y, columnIndex }: { images: string[]; y: any; columnIn
             className="relative overflow-hidden border border-gray-800 bg-gray-900 group cursor-pointer"
             style={{
               height: imageIndex % 2 === 0 ? "300px" : "400px",
+              position: "relative",
             }}
           >
-            <Image
-              src={src || "/placeholder.svg"}
-              alt={`Press ${columnIndex + 1}-${imageIndex + 1}`}
-              fill
-              className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
-              sizes="(max-width: 768px) 150px, 250px"
-              onError={(e) => {
-                console.log("[v0] Image failed to load:", src)
-              }}
-              onLoad={() => {
-                console.log("[v0] Image loaded successfully:", src)
-              }}
-            />
+            {src ? (
+              <img
+                src={src}
+                alt={`Press ${columnIndex + 1}-${imageIndex + 1}`}
+                className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
+                onError={(e) => {
+                  console.error("[Press Gallery] Image failed to load:", src)
+                  const target = e.target as HTMLImageElement
+                  target.style.display = "none"
+                }}
+                onLoad={() => {
+                  console.log("[Press Gallery] Image loaded successfully:", src)
+                }}
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-gray-600 text-xs">
+                No Image
+              </div>
+            )}
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300" />
             <div className="absolute top-4 right-4 text-xs tracking-wider bg-black bg-opacity-70 px-3 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
               PRESS_{String(columnIndex * 3 + imageIndex + 1).padStart(2, "0")}
