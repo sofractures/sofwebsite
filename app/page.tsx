@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { ChevronDown, ExternalLink, Mail, Instagram, Twitter, Github, Linkedin } from "lucide-react"
-import { motion } from "framer-motion"
+import { motion, useScroll, useTransform } from "framer-motion"
 import PressGallery from "@/components/press-gallery"
 import SmoothScroll from "@/components/smooth-scroll"
 
@@ -215,6 +215,125 @@ export default function Home() {
       ],
     },
   ]
+
+  // Project section component with parallax effect
+  const ProjectSection = ({ project, index, projects, onProjectClick, selectedProject }: { project: any; index: number; projects: any[]; onProjectClick: (project: any) => void; selectedProject: any }) => {
+    const sectionRef = useRef<HTMLDivElement>(null)
+    const { scrollYProgress } = useScroll({
+      target: sectionRef,
+      offset: ["start end", "end start"],
+    })
+
+    // Parallax transforms for different images - different speeds create depth
+    const mainImageY = useTransform(scrollYProgress, [0, 1], [0, -100])
+    const additionalImageY1 = useTransform(scrollYProgress, [0, 1], [0, -60])
+    const additionalImageY2 = useTransform(scrollYProgress, [0, 1], [0, -80])
+
+    return (
+      <div
+        ref={(el) => {
+          projectRefs.current[project.id] = el
+          sectionRef.current = el
+        }}
+        className={`min-h-screen border-t border-gray-900 ${
+          selectedProject?.id === project.id ? "bg-gray-950" : ""
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-4">
+              <div className="sticky top-20">
+                <div className="text-xs tracking-widest text-gray-600 mb-2">{project.code}</div>
+                <h2 className="text-2xl md:text-4xl tracking-tight mb-4">{project.title}</h2>
+                <div className="text-xs tracking-widest text-gray-600 mb-6">
+                  {project.category} // {project.year}
+                </div>
+
+                <p className="text-sm leading-relaxed mb-8 text-gray-400">{project.description}</p>
+
+                <div className="mb-8">
+                  <div className="text-xs tracking-widest text-gray-600 mb-3">TECH_STACK</div>
+                  <div className="space-y-1">
+                    {project.tech.map((tech: string) => (
+                      <div key={tech} className="text-xs tracking-wider">
+                        <span className="text-green-500">$</span> {tech}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <a
+                  href={project.link}
+                  className="inline-flex items-center text-xs tracking-widest hover:text-green-500 transition-colors"
+                >
+                  VIEW_PROJECT <ExternalLink className="ml-2" size={14} />
+                </a>
+              </div>
+            </div>
+
+            <div className="lg:col-span-8">
+              <div className="relative h-[60vh] mb-8 overflow-hidden border border-gray-900">
+                <motion.img
+                  src={project.image || "/placeholder.svg"}
+                  alt={project.title}
+                  className="w-full h-full object-cover"
+                  style={{ y: mainImageY }}
+                />
+                <div className="absolute top-4 right-4 text-xs tracking-wider bg-black bg-opacity-70 px-3 py-1 z-10">
+                  IMG_001
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {project.additionalImages.map((img: string, imgIndex: number) => {
+                  const imageY = imgIndex % 2 === 0 ? additionalImageY1 : additionalImageY2
+                  return (
+                    <div key={imgIndex} className="relative h-64 overflow-hidden border border-gray-900">
+                      <motion.img
+                        src={img || "/placeholder.svg"}
+                        alt={`${project.title} ${imgIndex + 2}`}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                        style={{ y: imageY }}
+                      />
+                      <div className="absolute top-4 right-4 text-xs tracking-wider bg-black bg-opacity-70 px-3 py-1 z-10">
+                        IMG_{String(imgIndex + 2).padStart(3, "0")}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center mt-16 pt-8 border-t border-gray-900">
+            <button
+              onClick={() => {
+                const prevIndex = index === 0 ? projects.length - 1 : index - 1
+                onProjectClick(projects[prevIndex])
+              }}
+              className="text-xs tracking-widest hover:text-green-500 transition-colors cursor-pointer"
+            >
+              ← PREV_PROJECT
+            </button>
+
+            <div className="text-xs tracking-wider text-gray-600">
+              {String(index + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
+            </div>
+
+            <button
+              onClick={() => {
+                const nextIndex = (index + 1) % projects.length
+                onProjectClick(projects[nextIndex])
+              }}
+              className="text-xs tracking-widest hover:text-green-500 transition-colors cursor-pointer"
+            >
+              NEXT_PROJECT →
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   useEffect(() => {
     setTimeout(() => setIsLoading(false), 2000)
@@ -581,101 +700,14 @@ export default function Home() {
 
       <section className="relative">
         {projects.map((project, index) => (
-          <div
+          <ProjectSection
             key={project.id}
-            ref={(el) => (projectRefs.current[project.id] = el)}
-            className={`min-h-screen border-t border-gray-900 ${
-              selectedProject?.id === project.id ? "bg-gray-950" : ""
-            }`}
-          >
-            <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-4">
-                  <div className="sticky top-20">
-                    <div className="text-xs tracking-widest text-gray-600 mb-2">{project.code}</div>
-                    <h2 className="text-2xl md:text-4xl tracking-tight mb-4">{project.title}</h2>
-                    <div className="text-xs tracking-widest text-gray-600 mb-6">
-                      {project.category} // {project.year}
-                    </div>
-
-                    <p className="text-sm leading-relaxed mb-8 text-gray-400">{project.description}</p>
-
-                    <div className="mb-8">
-                      <div className="text-xs tracking-widest text-gray-600 mb-3">TECH_STACK</div>
-                      <div className="space-y-1">
-                        {project.tech.map((tech) => (
-                          <div key={tech} className="text-xs tracking-wider">
-                            <span className="text-green-500">$</span> {tech}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <a
-                      href={project.link}
-                      className="inline-flex items-center text-xs tracking-widest hover:text-green-500 transition-colors"
-                    >
-                      VIEW_PROJECT <ExternalLink className="ml-2" size={14} />
-                    </a>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-8">
-                  <div className="relative h-[60vh] mb-8 overflow-hidden border border-gray-900">
-                    <img
-                      src={project.image || "/placeholder.svg"}
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-4 right-4 text-xs tracking-wider bg-black bg-opacity-70 px-3 py-1">
-                      IMG_001
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {project.additionalImages.map((img, imgIndex) => (
-                      <div key={imgIndex} className="relative h-64 overflow-hidden border border-gray-900">
-                        <img
-                          src={img || "/placeholder.svg"}
-                          alt={`${project.title} ${imgIndex + 2}`}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-4 right-4 text-xs tracking-wider bg-black bg-opacity-70 px-3 py-1">
-                          IMG_{String(imgIndex + 2).padStart(3, "0")}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center mt-16 pt-8 border-t border-gray-900">
-                <button
-                  onClick={() => {
-                    const prevIndex = index === 0 ? projects.length - 1 : index - 1
-                    handleProjectClick(projects[prevIndex])
-                  }}
-                  className="text-xs tracking-widest hover:text-green-500 transition-colors cursor-pointer"
-                >
-                  ← PREV_PROJECT
-                </button>
-
-                <div className="text-xs tracking-wider text-gray-600">
-                  {String(index + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
-                </div>
-
-                <button
-                  onClick={() => {
-                    const nextIndex = (index + 1) % projects.length
-                    handleProjectClick(projects[nextIndex])
-                  }}
-                  className="text-xs tracking-widest hover:text-green-500 transition-colors cursor-pointer"
-                >
-                  NEXT_PROJECT →
-                </button>
-              </div>
-            </div>
-          </div>
+            project={project}
+            index={index}
+            projects={projects}
+            selectedProject={selectedProject}
+            onProjectClick={handleProjectClick}
+          />
         ))}
       </section>
 
