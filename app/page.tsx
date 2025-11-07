@@ -221,120 +221,126 @@ export default function Home() {
     },
   ]
 
-  // Register GSAP ScrollTrigger plugin and setup animations
+  // Stacked projects scroll animation using vanilla JS (works with Lenis)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      gsap.registerPlugin(ScrollTrigger)
+    if (typeof window === "undefined") return
 
-      // Wait for DOM to be ready
-      const timer = setTimeout(() => {
-        const section = sectionRef.current
-        const cardsContainer = cardsContainerRef.current
-        const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[]
+    const section = sectionRef.current
+    const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[]
 
-        if (!section || !cardsContainer || cards.length === 0) {
-          console.log("Missing refs:", { section: !!section, cardsContainer: !!cardsContainer, cards: cards.length })
-          return
+    if (!section || cards.length === 0) return
+
+    // Initialize card positions
+    const initCards = () => {
+      cards.forEach((card, index) => {
+        if (index === 0) {
+          // First card - front
+          card.style.transform = "translateY(0) translateZ(0) scale(1)"
+          card.style.opacity = "1"
+          card.style.zIndex = String(projects.length - index)
+        } else {
+          // Other cards - stacked behind
+          const offset = index * 20
+          const zOffset = index * 200
+          const scale = 1 - index * 0.05
+          const opacity = Math.max(0.6 - index * 0.1, 0.3)
+
+          card.style.transform = `translateY(${offset}px) translateZ(-${zOffset}px) scale(${scale})`
+          card.style.opacity = String(opacity)
+          card.style.zIndex = String(projects.length - index)
         }
+      })
+    }
 
-        // Set section height for scroll range - this creates the scroll space
-        const sectionHeight = projects.length * window.innerHeight
-        section.style.height = `${sectionHeight}px`
+    // Update card positions based on scroll
+    const updateCards = () => {
+      const sectionTop = section.offsetTop
+      const sectionHeight = section.offsetHeight
+      const scrollY = window.scrollY || window.pageYOffset
 
-        // Refresh ScrollTrigger to recalculate
-        ScrollTrigger.refresh()
+      // Only animate when in the projects section
+      if (scrollY >= sectionTop && scrollY <= sectionTop + sectionHeight) {
+        const sectionScroll = scrollY - sectionTop
+        const cardHeight = window.innerHeight
+        const currentCardIndex = Math.floor(sectionScroll / cardHeight)
+        const cardProgress = (sectionScroll % cardHeight) / cardHeight
 
-        // Set initial states for cards using GSAP
         cards.forEach((card, index) => {
-          if (index === 0) {
-            gsap.set(card, {
-              yPercent: 0,
-              z: 0,
-              scale: 1,
-              opacity: 1,
-              rotateX: 0,
-            })
-          } else {
-            gsap.set(card, {
-              yPercent: 5,
-              z: -200 * index,
-              scale: 0.95,
-              opacity: 0.6,
-              rotateX: 5,
-            })
+          if (index === currentCardIndex) {
+            // Current card - sliding up and out
+            const yMove = -cardProgress * 100
+            const opacity = 1 - cardProgress
+            const scale = 1 - cardProgress * 0.2
+            const rotateX = -cardProgress * 15
+
+            card.style.transform = `translateY(${yMove}%) translateZ(0) scale(${scale}) rotateX(${rotateX}deg)`
+            card.style.opacity = String(opacity)
+            card.style.zIndex = String(projects.length + 10)
+          } else if (index === currentCardIndex + 1) {
+            // Next card - coming forward
+            const yStart = 20
+            const yMove = yStart - cardProgress * yStart
+            const zStart = -200
+            const zMove = zStart + cardProgress * Math.abs(zStart)
+            const scaleStart = 0.95
+            const scale = scaleStart + cardProgress * (1 - scaleStart)
+            const opacityStart = 0.6
+            const opacity = opacityStart + cardProgress * (1 - opacityStart)
+            const rotateX = 5 - cardProgress * 5
+
+            card.style.transform = `translateY(${yMove}px) translateZ(${zMove}px) scale(${scale}) rotateX(${rotateX}deg)`
+            card.style.opacity = String(opacity)
+            card.style.zIndex = String(projects.length - index)
+          } else if (index > currentCardIndex + 1) {
+            // Cards further back
+            const offset = index - currentCardIndex - 1
+            const yOffset = 20 + offset * 20
+            const zOffset = 200 + offset * 200
+            const scale = 0.95 - offset * 0.05
+            const opacity = Math.max(0.5 - offset * 0.1, 0.2)
+
+            card.style.transform = `translateY(${yOffset}px) translateZ(-${zOffset}px) scale(${scale})`
+            card.style.opacity = String(opacity)
+            card.style.zIndex = String(projects.length - index)
+          } else if (index < currentCardIndex) {
+            // Cards already passed
+            card.style.transform = "translateY(-150%) translateZ(0) scale(0.8)"
+            card.style.opacity = "0"
+            card.style.zIndex = "0"
           }
         })
-
-        // Pin the container FIRST - this is critical
-        const pinTrigger = ScrollTrigger.create({
-          trigger: section,
-          start: "top top",
-          end: () => `+=${projects.length * window.innerHeight}`,
-          pin: cardsContainer,
-          pinSpacing: true,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-        })
-
-        // Animate each card
-        cards.forEach((card, index) => {
-          const isLast = index === cards.length - 1
-
-          // Animate current card out
-          gsap.to(card, {
-            scrollTrigger: {
-              trigger: section,
-              start: () => `top+=${index * window.innerHeight} top`,
-              end: () => `top+=${(index + 1) * window.innerHeight} top`,
-              scrub: 1,
-              invalidateOnRefresh: true,
-            },
-            yPercent: -100,
-            opacity: 0,
-            scale: 0.8,
-            rotateX: -15,
-            ease: "none",
-          })
-
-          // Animate next card forward
-          if (!isLast) {
-            const nextCard = cards[index + 1]
-            gsap.fromTo(
-              nextCard,
-              {
-                yPercent: 5,
-                scale: 0.95,
-                z: -200,
-                opacity: 0.6,
-                rotateX: 5,
-              },
-              {
-                scrollTrigger: {
-                  trigger: section,
-                  start: () => `top+=${index * window.innerHeight} top`,
-                  end: () => `top+=${(index + 1) * window.innerHeight} top`,
-                  scrub: 1,
-                  invalidateOnRefresh: true,
-                },
-                yPercent: 0,
-                scale: 1,
-                z: 0,
-                opacity: 1,
-                rotateX: 0,
-                ease: "none",
-              }
-            )
-          }
-        })
-
-        // Refresh after setup
-        ScrollTrigger.refresh()
-      }, 200)
-
-      return () => {
-        clearTimeout(timer)
-        ScrollTrigger.getAll().forEach((trigger) => trigger.kill())
       }
+    }
+
+    // Handle scroll with RAF for smoothness
+    let ticking = false
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          updateCards()
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
+    // Initialize
+    initCards()
+    updateCards()
+
+    // Add scroll listener
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    window.addEventListener("resize", () => {
+      initCards()
+      updateCards()
+    })
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      window.removeEventListener("resize", () => {
+        initCards()
+        updateCards()
+      })
     }
   }, [projects.length])
 
@@ -345,9 +351,13 @@ export default function Home() {
         ref={cardRef}
         className="project-card absolute rounded-2xl overflow-hidden shadow-2xl"
         style={{
+          position: "absolute",
           width: "80vw",
           maxWidth: "1200px",
           height: "85vh",
+          transformStyle: "preserve-3d",
+          backfaceVisibility: "hidden",
+          willChange: "transform, opacity",
           zIndex: projects.length - index,
         }}
         data-index={index}
