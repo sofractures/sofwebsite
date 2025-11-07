@@ -226,17 +226,23 @@ export default function Home() {
     if (typeof window !== "undefined") {
       gsap.registerPlugin(ScrollTrigger)
 
-      // Wait for next tick to ensure DOM is ready
+      // Wait for DOM to be ready
       const timer = setTimeout(() => {
         const section = sectionRef.current
         const cardsContainer = cardsContainerRef.current
         const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[]
 
-        if (!section || !cardsContainer || cards.length === 0) return
+        if (!section || !cardsContainer || cards.length === 0) {
+          console.log("Missing refs:", { section: !!section, cardsContainer: !!cardsContainer, cards: cards.length })
+          return
+        }
 
-        // Set section height for scroll range
+        // Set section height for scroll range - this creates the scroll space
         const sectionHeight = projects.length * window.innerHeight
         section.style.height = `${sectionHeight}px`
+
+        // Refresh ScrollTrigger to recalculate
+        ScrollTrigger.refresh()
 
         // Set initial states for cards using GSAP
         cards.forEach((card, index) => {
@@ -259,6 +265,17 @@ export default function Home() {
           }
         })
 
+        // Pin the container FIRST - this is critical
+        const pinTrigger = ScrollTrigger.create({
+          trigger: section,
+          start: "top top",
+          end: () => `+=${projects.length * window.innerHeight}`,
+          pin: cardsContainer,
+          pinSpacing: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        })
+
         // Animate each card
         cards.forEach((card, index) => {
           const isLast = index === cards.length - 1
@@ -270,6 +287,7 @@ export default function Home() {
               start: () => `top+=${index * window.innerHeight} top`,
               end: () => `top+=${(index + 1) * window.innerHeight} top`,
               scrub: 1,
+              invalidateOnRefresh: true,
             },
             yPercent: -100,
             opacity: 0,
@@ -296,6 +314,7 @@ export default function Home() {
                   start: () => `top+=${index * window.innerHeight} top`,
                   end: () => `top+=${(index + 1) * window.innerHeight} top`,
                   scrub: 1,
+                  invalidateOnRefresh: true,
                 },
                 yPercent: 0,
                 scale: 1,
@@ -308,15 +327,9 @@ export default function Home() {
           }
         })
 
-        // Pin the container while scrolling through cards
-        ScrollTrigger.create({
-          trigger: section,
-          start: "top top",
-          end: () => `+=${projects.length * window.innerHeight}`,
-          pin: cardsContainer,
-          anticipatePin: 1,
-        })
-      }, 100)
+        // Refresh after setup
+        ScrollTrigger.refresh()
+      }, 200)
 
       return () => {
         clearTimeout(timer)
@@ -747,6 +760,7 @@ export default function Home() {
         ref={sectionRef}
         id="projects-section"
         className="relative bg-black"
+        style={{ height: `${projects.length * 100}vh` }}
       >
         <div className="mb-16 px-6 md:px-12 pt-20">
           <div className="text-xs tracking-widest text-gray-600 mb-2">SECTION_02</div>
