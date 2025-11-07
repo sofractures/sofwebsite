@@ -4,6 +4,8 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { ChevronDown, ExternalLink, Mail, Instagram, Twitter, Github, Linkedin } from "lucide-react"
 import { motion, useScroll, useTransform } from "framer-motion"
+import gsap from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
 import PressGallery from "@/components/press-gallery"
 import SmoothScroll from "@/components/smooth-scroll"
 
@@ -102,6 +104,9 @@ export default function Home() {
   const isDragging = useRef(false)
   const previousMousePosition = useRef({ x: 0, y: 0 })
   const projectRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const cardsContainerRef = useRef<HTMLDivElement>(null)
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const rotatingTexts = ["DIGITAL_ARTIST", "CREATIVE_CODER", "ELECTRONIC_MUSICIAN", "GENERATIVE_ART", "AUDIO_VISUAL"]
 
@@ -216,57 +221,160 @@ export default function Home() {
     },
   ]
 
-  // Project card component for vertical scroll rotation
-  const ProjectCard = ({ project, index }: { project: any; index: number }) => {
+  // Register GSAP ScrollTrigger plugin and setup animations
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      gsap.registerPlugin(ScrollTrigger)
+
+      // Wait for next tick to ensure DOM is ready
+      const timer = setTimeout(() => {
+        const section = sectionRef.current
+        const cardsContainer = cardsContainerRef.current
+        const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[]
+
+        if (!section || !cardsContainer || cards.length === 0) return
+
+        // Set section height for scroll range
+        const sectionHeight = projects.length * window.innerHeight
+        section.style.height = `${sectionHeight}px`
+
+        // Set initial states for cards using GSAP
+        cards.forEach((card, index) => {
+          if (index === 0) {
+            gsap.set(card, {
+              yPercent: 0,
+              z: 0,
+              scale: 1,
+              opacity: 1,
+              rotateX: 0,
+            })
+          } else {
+            gsap.set(card, {
+              yPercent: 5,
+              z: -200 * index,
+              scale: 0.95,
+              opacity: 0.6,
+              rotateX: 5,
+            })
+          }
+        })
+
+        // Animate each card
+        cards.forEach((card, index) => {
+          const isLast = index === cards.length - 1
+
+          // Animate current card out
+          gsap.to(card, {
+            scrollTrigger: {
+              trigger: section,
+              start: () => `top+=${index * window.innerHeight} top`,
+              end: () => `top+=${(index + 1) * window.innerHeight} top`,
+              scrub: 1,
+            },
+            yPercent: -100,
+            opacity: 0,
+            scale: 0.8,
+            rotateX: -15,
+            ease: "none",
+          })
+
+          // Animate next card forward
+          if (!isLast) {
+            const nextCard = cards[index + 1]
+            gsap.fromTo(
+              nextCard,
+              {
+                yPercent: 5,
+                scale: 0.95,
+                z: -200,
+                opacity: 0.6,
+                rotateX: 5,
+              },
+              {
+                scrollTrigger: {
+                  trigger: section,
+                  start: () => `top+=${index * window.innerHeight} top`,
+                  end: () => `top+=${(index + 1) * window.innerHeight} top`,
+                  scrub: 1,
+                },
+                yPercent: 0,
+                scale: 1,
+                z: 0,
+                opacity: 1,
+                rotateX: 0,
+                ease: "none",
+              }
+            )
+          }
+        })
+
+        // Pin the container while scrolling through cards
+        ScrollTrigger.create({
+          trigger: section,
+          start: "top top",
+          end: () => `+=${projects.length * window.innerHeight}`,
+          pin: cardsContainer,
+          anticipatePin: 1,
+        })
+      }, 100)
+
+      return () => {
+        clearTimeout(timer)
+        ScrollTrigger.getAll().forEach((trigger) => trigger.kill())
+      }
+    }
+  }, [projects.length])
+
+  // Project card component for 3D stacked scroll
+  const ProjectCard = ({ project, index, cardRef }: { project: any; index: number; cardRef: (el: HTMLDivElement | null) => void }) => {
     return (
       <div
-        ref={(el) => (projectRefs.current[project.id] = el)}
-        className="h-screen w-full flex items-center justify-center snap-start snap-always"
-        style={{ scrollSnapAlign: 'start' }}
+        ref={cardRef}
+        className="project-card absolute rounded-2xl overflow-hidden shadow-2xl"
+        style={{
+          width: "80vw",
+          maxWidth: "1200px",
+          height: "85vh",
+          zIndex: projects.length - index,
+        }}
+        data-index={index}
       >
-        <div className="max-w-7xl mx-auto px-6 md:px-12 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-5">
-              <div className="text-xs tracking-widest text-gray-600 mb-2">{project.code}</div>
-              <h2 className="text-3xl md:text-5xl lg:text-6xl tracking-tight mb-4 font-bold">{project.title}</h2>
-              <div className="text-xs tracking-widest text-gray-600 mb-6">
-                {project.category} // {project.year}
-              </div>
-              <p className="text-sm md:text-base leading-relaxed mb-8 text-gray-400 max-w-md">{project.description}</p>
-              <div className="mb-8">
-                <div className="text-xs tracking-widest text-gray-600 mb-3">TECH_STACK</div>
-                <div className="flex flex-wrap gap-2">
-                  {project.tech.map((tech: string) => (
-                    <span key={tech} className="text-xs px-3 py-1.5 bg-green-500/10 text-green-400 border border-green-500/20">
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <a
-                href={project.link}
-                className="inline-flex items-center text-xs tracking-widest hover:text-green-500 transition-colors text-gray-300"
-              >
-                VIEW_PROJECT <ExternalLink className="ml-2" size={14} />
-              </a>
-            </div>
-
-            <div className="lg:col-span-7">
-              <div className="relative h-[60vh] md:h-[70vh] overflow-hidden border border-gray-800 bg-gray-900">
-                <img
-                  src={project.image || "/placeholder.svg"}
-                  alt={project.title}
-                  className="w-full h-full object-cover"
-                  style={{ willChange: 'auto', imageRendering: 'auto' }}
-                  loading="eager"
-                  decoding="async"
-                />
-                <div className="absolute top-4 right-4 text-xs tracking-wider bg-black/70 backdrop-blur-sm px-3 py-1.5 border border-gray-700">
-                  {String(index + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
-                </div>
-              </div>
-            </div>
+        <img
+          src={project.image || "/placeholder.svg"}
+          alt={project.title}
+          className="w-full h-full object-cover"
+          style={{ willChange: "auto" }}
+          loading="eager"
+          decoding="async"
+        />
+        <div
+          className="absolute inset-0 flex flex-col justify-end p-8 md:p-12"
+          style={{
+            background: `linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 60%)`,
+          }}
+        >
+          <div className="text-xs uppercase tracking-widest text-gray-400 mb-2">{project.code}</div>
+          <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">{project.title}</h2>
+          <div className="text-xs tracking-widest text-gray-400 mb-4">
+            {project.category} // {project.year}
           </div>
+          <p className="text-sm md:text-base text-gray-300 mb-6 max-w-md line-clamp-2">{project.description}</p>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {project.tech.slice(0, 3).map((tech: string) => (
+              <span key={tech} className="text-xs px-3 py-1.5 bg-green-500/20 text-green-400 border border-green-500/30">
+                {tech}
+              </span>
+            ))}
+          </div>
+          <a
+            href={project.link}
+            className="inline-flex items-center text-xs tracking-widest text-green-400 hover:text-green-300 transition-colors"
+          >
+            VIEW_PROJECT <ExternalLink className="ml-2" size={14} />
+          </a>
+        </div>
+        <div className="absolute top-8 right-8 text-6xl font-bold opacity-20 text-white">
+          {String(index + 1).padStart(2, "0")}
         </div>
       </div>
     )
@@ -635,22 +743,35 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative bg-black">
-        <div className="h-screen flex flex-col snap-start snap-always" style={{ scrollSnapAlign: 'start' }}>
-          <div className="px-6 md:px-12 pt-20 pb-8">
-            <div className="text-xs tracking-widest text-gray-600 mb-2">SECTION_02</div>
-            <h2 className="text-3xl md:text-5xl tracking-tight mb-4">SELECTED_WORKS</h2>
-            <div className="max-w-xs h-px bg-gray-800" />
-          </div>
+      <section
+        ref={sectionRef}
+        id="projects-section"
+        className="relative bg-black"
+      >
+        <div className="mb-16 px-6 md:px-12 pt-20">
+          <div className="text-xs tracking-widest text-gray-600 mb-2">SECTION_02</div>
+          <h2 className="text-3xl md:text-5xl tracking-tight mb-4">SELECTED_WORKS</h2>
+          <div className="max-w-xs h-px bg-gray-800" />
         </div>
 
-        {projects.map((project, index) => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            index={index}
-          />
-        ))}
+        <div
+          ref={cardsContainerRef}
+          id="cards-container"
+          className="sticky top-0 h-screen flex items-center justify-center overflow-hidden"
+          style={{ perspective: "2000px", perspectiveOrigin: "center" }}
+        >
+          {projects.map((project, index) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              index={index}
+              cardRef={(el) => {
+                cardRefs.current[index] = el
+                projectRefs.current[project.id] = el
+              }}
+            />
+          ))}
+        </div>
       </section>
 
       <PressGallery />

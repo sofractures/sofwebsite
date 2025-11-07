@@ -133,3 +133,11 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* 3D Stacked Projects */
+.project-card {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
