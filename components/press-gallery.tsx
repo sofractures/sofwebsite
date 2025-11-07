@@ -102,7 +102,7 @@ export default function PressGallery() {
   }, [])
 
   return (
-    <section className="relative py-20 px-6 md:px-12 bg-black overflow-hidden">
+    <section className="relative py-20 px-6 md:px-12 bg-black overflow-hidden h-screen snap-start snap-always" style={{ scrollSnapAlign: 'start' }}>
       <div className="max-w-7xl mx-auto">
         <div className="mb-16 text-center">
           <div className="text-xs tracking-widest text-gray-600 mb-2">SECTION_03</div>

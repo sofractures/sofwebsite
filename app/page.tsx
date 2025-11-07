@@ -216,67 +216,59 @@ export default function Home() {
     },
   ]
 
-  // Project card component with scroll animations
-  const ProjectCard = ({ project, index, onProjectClick }: { project: any; index: number; onProjectClick: (project: any) => void }) => {
-    const cardRef = useRef<HTMLDivElement>(null)
-    const { scrollYProgress } = useScroll({
-      target: cardRef,
-      offset: ["start end", "end start"],
-    })
-
-    const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.95, 1, 0.95])
-    const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0.7, 1, 1, 0.7])
-
+  // Project card component for vertical scroll rotation
+  const ProjectCard = ({ project, index }: { project: any; index: number }) => {
     return (
-      <motion.div
-        ref={(el) => {
-          projectRefs.current[project.id] = el
-          cardRef.current = el
-        }}
-        style={{ scale, opacity }}
-        className="flex-shrink-0 w-[85vw] md:w-[60vw] lg:w-[45vw] snap-center"
-        onClick={() => onProjectClick(project)}
+      <div
+        ref={(el) => (projectRefs.current[project.id] = el)}
+        className="h-screen w-full flex items-center justify-center snap-start snap-always"
+        style={{ scrollSnapAlign: 'start' }}
       >
-        <div className="relative group cursor-pointer">
-          <div className="relative h-[70vh] md:h-[80vh] overflow-hidden border border-gray-800 bg-gray-900">
-            <motion.img
-              src={project.image || "/placeholder.svg"}
-              alt={project.title}
-              className="w-full h-full object-cover"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-              <div className="text-xs tracking-widest text-gray-400 mb-2">{project.code}</div>
-              <h3 className="text-2xl md:text-3xl font-bold tracking-tight mb-2 text-white">{project.title}</h3>
-              <div className="text-xs tracking-widest text-gray-400 mb-4">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-5">
+              <div className="text-xs tracking-widest text-gray-600 mb-2">{project.code}</div>
+              <h2 className="text-3xl md:text-5xl lg:text-6xl tracking-tight mb-4 font-bold">{project.title}</h2>
+              <div className="text-xs tracking-widest text-gray-600 mb-6">
                 {project.category} // {project.year}
               </div>
-              <p className="text-sm text-gray-300 mb-4 line-clamp-2">{project.description}</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {project.tech.slice(0, 3).map((tech: string) => (
-                  <span key={tech} className="text-xs px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30">
-                    {tech}
-                  </span>
-                ))}
+              <p className="text-sm md:text-base leading-relaxed mb-8 text-gray-400 max-w-md">{project.description}</p>
+              <div className="mb-8">
+                <div className="text-xs tracking-widest text-gray-600 mb-3">TECH_STACK</div>
+                <div className="flex flex-wrap gap-2">
+                  {project.tech.map((tech: string) => (
+                    <span key={tech} className="text-xs px-3 py-1.5 bg-green-500/10 text-green-400 border border-green-500/20">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
               </div>
               <a
                 href={project.link}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center text-xs tracking-widest text-green-400 hover:text-green-300 transition-colors"
+                className="inline-flex items-center text-xs tracking-widest hover:text-green-500 transition-colors text-gray-300"
               >
                 VIEW_PROJECT <ExternalLink className="ml-2" size={14} />
               </a>
             </div>
 
-            <div className="absolute top-4 right-4 text-xs tracking-wider bg-black/70 backdrop-blur-sm px-3 py-1.5 border border-gray-700">
-              {String(index + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
+            <div className="lg:col-span-7">
+              <div className="relative h-[60vh] md:h-[70vh] overflow-hidden border border-gray-800 bg-gray-900">
+                <img
+                  src={project.image || "/placeholder.svg"}
+                  alt={project.title}
+                  className="w-full h-full object-cover"
+                  style={{ willChange: 'auto', imageRendering: 'auto' }}
+                  loading="eager"
+                  decoding="async"
+                />
+                <div className="absolute top-4 right-4 text-xs tracking-wider bg-black/70 backdrop-blur-sm px-3 py-1.5 border border-gray-700">
+                  {String(index + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     )
   }
 
@@ -643,31 +635,22 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative py-20 bg-black">
-        <div className="mb-16 px-6 md:px-12">
-          <div className="text-xs tracking-widest text-gray-600 mb-2">SECTION_02</div>
-          <h2 className="text-3xl md:text-5xl tracking-tight mb-4">SELECTED_WORKS</h2>
-          <div className="max-w-xs h-px bg-gray-800" />
-        </div>
-
-        <div className="relative">
-          <div className="flex gap-6 md:gap-8 px-6 md:px-12 overflow-x-auto scrollbar-hide snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {projects.map((project, index) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                index={index}
-                onProjectClick={handleProjectClick}
-              />
-            ))}
+      <section className="relative bg-black">
+        <div className="h-screen flex flex-col snap-start snap-always" style={{ scrollSnapAlign: 'start' }}>
+          <div className="px-6 md:px-12 pt-20 pb-8">
+            <div className="text-xs tracking-widest text-gray-600 mb-2">SECTION_02</div>
+            <h2 className="text-3xl md:text-5xl tracking-tight mb-4">SELECTED_WORKS</h2>
+            <div className="max-w-xs h-px bg-gray-800" />
           </div>
         </div>
 
-        <div className="mt-12 px-6 md:px-12 text-center">
-          <p className="text-xs tracking-widest text-gray-600">
-            SCROLL_HORIZONTALLY_TO_EXPLORE
-          </p>
-        </div>
+        {projects.map((project, index) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            index={index}
+          />
+        ))}
       </section>
 
       <PressGallery />
