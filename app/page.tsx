@@ -579,55 +579,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative py-20 px-6 md:px-12 bg-black">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-16 text-center">
-            <div className="text-xs tracking-widest text-gray-600 mb-2">SECTION_02</div>
-            <h2 className="text-3xl md:text-5xl tracking-tight mb-4">PROJECT_ARCHIVE</h2>
-            <div className="max-w-xs mx-auto h-px bg-gray-800" />
-          </div>
-
-          <div className="space-y-8">
-            {projects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                onClick={() => handleProjectClick(project)}
-                className="cursor-pointer group"
-              >
-                <div
-                  className={`${project.bgColor} rounded-3xl p-8 md:p-12 transition-all duration-300 hover:scale-[1.02]`}
-                >
-                  <div className="flex justify-between items-start mb-8">
-                    <h3 className="text-2xl md:text-4xl font-bold tracking-tight text-white">{project.title}</h3>
-                    <div className="text-right text-white">
-                      <p className="text-sm tracking-widest">
-                        {project.category} — {project.year}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="relative aspect-video rounded-xl overflow-hidden">
-                    <img
-                      src={project.image || "/placeholder.svg"}
-                      alt={project.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-
-                  <div className="mt-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <p className="text-white text-sm">View ↗</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="relative">
         {projects.map((project, index) => (
           <div
